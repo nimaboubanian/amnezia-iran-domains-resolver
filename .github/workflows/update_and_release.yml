@@ -28,7 +28,7 @@ jobs:
         curl -LO $LATEST_RELEASE_URL
       
     - name: Run script
-      run: python domain_resolver.py domains.txt results.json
+      run: python main.py domains.txt results.json
 
     - name: Create Release
       id: create_release
