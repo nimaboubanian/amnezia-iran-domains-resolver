@@ -1,0 +1,1 @@
+# amnezia-iran-domains-resolver
