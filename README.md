@@ -9,7 +9,7 @@ The Amnezia Iran Domains Resolver is a tool designed to enhance the functionalit
 - Automatically fetches the latest list of Iranian domains from [bootmortis/iran-hosted-domains](https://github.com/bootmortis/iran-hosted-domains)
 - Resolves domain names to IP addresses
 - Generates a JSON file compatible with Amnezia VPN's split tunneling feature
-- Runs daily via GitHub Actions to ensure up-to-date information
+- Runs weekly via GitHub Actions to ensure up-to-date information
 - Provides detailed error logs for troubleshooting
 
 ## How It Works
