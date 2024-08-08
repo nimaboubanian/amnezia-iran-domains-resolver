@@ -1,7 +1,6 @@
 import json
 import socket
 import sys
-import os
 from datetime import datetime
 
 
@@ -34,11 +33,32 @@ def resolve_domain(domain, timeout=5, log_file='error_log.txt'):
         return ""
 
 
+def merge_results(old_file, new_file, output_file):
+    try:
+        with open(old_file, 'r') as f:
+            old_data = json.load(f)
+    except FileNotFoundError:
+        old_data = []
+
+    with open(new_file, 'r') as f:
+        new_data = json.load(f)
+
+    # Create a dictionary from old data for easy lookup and update
+    result_dict = {item['hostname']: item for item in old_data}
+
+    # Update with new data
+    for item in new_data:
+        result_dict[item['hostname']] = item
+
+    # Convert back to list
+    merged_data = list(result_dict.values())
+
+    with open(output_file, 'w') as f:
+        json.dump(merged_data, f, indent=2)
+
+
 def process_file(input_file, output_file, log_file='error_log.txt'):
     try:
-        if not os.path.exists(input_file):
-            raise FileNotFoundError(f"Input file '{input_file}' not found.")
-
         with open(input_file, 'r') as f:
             domains = f.readlines()
 
@@ -48,16 +68,7 @@ def process_file(input_file, output_file, log_file='error_log.txt'):
             log_error(log_file, input_file, error_msg)
             return
 
-        # Initialize the output file with an empty list
-        try:
-            with open(output_file, 'w') as f:
-                json.dump([], f)
-        except IOError as e:
-            error_msg = f"Unable to write to output file '{output_file}'. Please check file permissions and disk space."
-            print(f"Error: {error_msg}")
-            log_error(log_file, output_file, error_msg)
-            return
-
+        results = []
         for domain in domains:
             hostname = domain.strip()
             if not hostname:
@@ -68,30 +79,17 @@ def process_file(input_file, output_file, log_file='error_log.txt'):
                 "hostname": hostname,
                 "ip": ip
             }
+            results.append(result)
+            print(f"Processed: {hostname}")
 
-            try:
-                # Read the existing content
-                with open(output_file, 'r') as f:
-                    results = json.load(f)
+        # Write new results to a temporary file
+        with open('temp_results.json', 'w') as f:
+            json.dump(results, f, indent=2)
 
-                # Append the new result
-                results.append(result)
+        # Merge new results with old results
+        merge_results('old_results.json', 'temp_results.json', output_file)
 
-                # Write the updated content back to the file
-                with open(output_file, 'w') as f:
-                    json.dump(results, f, indent=4)
-
-                print(f"Processed: {hostname}")
-            except json.JSONDecodeError:
-                error_msg = f"The output file '{output_file}' contains invalid JSON. It will be reset."
-                print(f"Error: {error_msg}")
-                log_error(log_file, output_file, error_msg)
-                with open(output_file, 'w') as f:
-                    json.dump([result], f, indent=4)
-            except IOError as e:
-                error_msg = f"Unable to update output file '{output_file}'. Please check file permissions and disk space. The result for '{hostname}' could not be saved."
-                print(f"Error: {error_msg}")
-                log_error(log_file, output_file, error_msg)
+        print(f"Processing complete. Results have been saved to {output_file}")
 
     except FileNotFoundError as e:
         error_msg = str(e)
@@ -105,7 +103,7 @@ def process_file(input_file, output_file, log_file='error_log.txt'):
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        print("Usage: python script_name.py input_file output_file")
+        print("Usage: python main.py input_file output_file")
         sys.exit(1)
 
     input_file = sys.argv[1]
@@ -113,5 +111,4 @@ if __name__ == "__main__":
     log_file = 'error_log.txt'
 
     process_file(input_file, output_file, log_file)
-    print(f"Processing complete. Results have been saved to {output_file}")
     print(f"Any errors encountered have been logged to {log_file}")

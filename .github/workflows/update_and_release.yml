@@ -22,13 +22,41 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Fetch latest domains.txt
+    - name: Fetch latest domains.txt and compare
       run: |
-        LATEST_RELEASE_URL=$(curl -s https://api.github.com/repos/bootmortis/iran-hosted-domains/releases/latest | grep "browser_download_url.*domains\.txt" | cut -d '"' -f 4)
-        curl -LO $LATEST_RELEASE_URL
-      
-    - name: Run script
-      run: python main.py domains.txt results.json
+        # Download the new domains.txt
+        curl -L -o new_domains.txt https://github.com/bootmortis/iran-hosted-domains/releases/latest/download/domains.txt
+        
+        # If old_domains.txt doesn't exist, create an empty file
+        touch old_domains.txt
+        
+        # Find new or changed domains
+        grep -vxFf old_domains.txt new_domains.txt > diff_domains.txt
+        
+        # Check if there are any differences
+        if [ -s diff_domains.txt ]; then
+          echo "Changes detected, processing new domains."
+        else
+          echo "No changes detected, exiting."
+          exit 0
+        fi
+        
+        # Update old_domains.txt for the next run
+        mv new_domains.txt old_domains.txt
+
+    - name: Run script on diff
+      run: python main.py diff_domains.txt results.json
+
+    - name: Merge new results
+      run: |
+        # If old_results.json doesn't exist, create an empty JSON array
+        [ -f old_results.json ] || echo '[]' > old_results.json
+        
+        # Merge old and new results, removing duplicates
+        jq -s '.[0] + .[1] | unique_by(.hostname)' old_results.json results.json > merged_results.json
+        
+        # Update old_results.json for the next run
+        mv merged_results.json old_results.json
 
     - name: Create Release
       id: create_release
@@ -47,7 +75,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./results.json
+        asset_path: ./old_results.json
         asset_name: results.json
         asset_content_type: application/json
 
@@ -60,3 +88,11 @@ jobs:
         asset_path: ./error_log.txt
         asset_name: error_log.txt
         asset_content_type: text/plain
+
+    - name: Commit and push updated files
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add old_domains.txt old_results.json
+        git commit -m "Update processed domains and results" || echo "No changes to commit"
+        git push
