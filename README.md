@@ -2,23 +2,30 @@
 
 ## Overview
 
-The Amnezia Iran Domains Resolver is a tool designed to enhance the functionality of Amnezia VPN for users in Iran. It automatically fetches a list of Iranian domains, resolves them to their corresponding IP addresses, and formats the data for use with Amnezia VPN's split tunneling feature.
+The Amnezia Iran Domains Resolver is an automated tool designed to enhance the functionality of Amnezia VPN for users in Iran. It fetches a list of Iranian domains, resolves them to their corresponding IP addresses, and formats the data for use with Amnezia VPN's split tunneling feature. The tool is optimized to process only new or changed domains in each run, improving efficiency and reducing processing time.
+
+[![GitHub Actions Workflow Status](https://img.shields.io/github/workflow/status/yourusername/amnezia-iran-domains-resolver/Weekly%20Update%20and%20Release?style=flat-square)](https://github.com/yourusername/amnezia-iran-domains-resolver/actions)
+[![Latest Release](https://img.shields.io/github/v/release/yourusername/amnezia-iran-domains-resolver?style=flat-square)](https://github.com/yourusername/amnezia-iran-domains-resolver/releases/latest)
+[![License](https://img.shields.io/github/license/yourusername/amnezia-iran-domains-resolver?style=flat-square)](LICENSE)
 
 ## Features
 
 - Automatically fetches the latest list of Iranian domains from [bootmortis/iran-hosted-domains](https://github.com/bootmortis/iran-hosted-domains)
+- Processes only new or changed domains in each run
 - Resolves domain names to IP addresses
+- Merges new results with existing data
 - Generates a JSON file compatible with Amnezia VPN's split tunneling feature
 - Runs weekly via GitHub Actions to ensure up-to-date information
 - Provides detailed error logs for troubleshooting
 
 ## How It Works
 
-1. A GitHub Actions workflow runs daily at midnight UTC.
+1. A GitHub Actions workflow runs weekly at midnight UTC every Sunday.
 2. It fetches the latest `domains.txt` file from the [bootmortis/iran-hosted-domains](https://github.com/bootmortis/iran-hosted-domains) repository.
-3. The Python script `domain_resolver.py` processes this file, resolving each domain to its IP address.
-4. The script generates a `results.json` file containing the resolved domain-IP pairs.
-5. A new release is created with the `results.json` and `error_log.txt` files as assets.
+3. The workflow compares the new domains list with the previously processed list and identifies new or changed domains.
+4. The Python script `main.py` processes only the new or changed domains, resolving each to its IP address.
+5. The script merges the new results with the existing data, updating any changed entries.
+6. A new release is created with the updated `results.json` and `error_log.txt` files as assets.
 
 ## Usage
 
@@ -47,7 +54,7 @@ If you want to run the script on your local machine:
 
 4. Run the script:
    ```
-   python domain_resolver.py input_domains.txt output_results.json
+   python main.py input_domains.txt output_results.json
    ```
 
 5. Check the `output_results.json` for the results and `error_log.txt` for any errors.
@@ -59,9 +66,9 @@ amnezia-iran-domains-resolver/
 │
 ├── .github/
 │   └── workflows/
-│       └── update_and_release.yml
+│       └── weekly_update_and_release.yml
 │
-├── domain_resolver.py
+├── main.py
 ├── requirements.txt
 ├── .gitignore
 ├── LICENSE
@@ -100,4 +107,4 @@ If you have any questions, feel free to open an issue or contact the repository 
 
 ---
 
-Made with ❤️ for internet freedom and privacy
+Made with ❤️ for freedom and privacy
